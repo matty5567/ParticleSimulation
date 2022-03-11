@@ -1,14 +1,15 @@
 #include <iostream>
 #include <vector>
 #include <math.h>
-#include "Ball.h"
+#include "Particle.h"
 #include "Collision.h"
 #include "CollisionHeap.h"
+#pragma once
 
 
 
 CollisionHeap::CollisionHeap() {
-	heap = {};
+	heap = {Collision()};
 };
 
 void CollisionHeap::sink(int pos) {
@@ -66,7 +67,6 @@ void CollisionHeap::showHeap() {
 	for (auto i : this->heap) {
 		std::cout << i.getTime() << " ";
 	}
-
 	std::cout << std::endl;
 
 }

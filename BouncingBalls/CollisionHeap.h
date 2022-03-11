@@ -1,10 +1,10 @@
-#pragma once
 #include "Collision.h"
+#pragma once
 
 class CollisionHeap {
+
 private:
 	std::vector<Collision> heap;
-
 
 public:
 	CollisionHeap();

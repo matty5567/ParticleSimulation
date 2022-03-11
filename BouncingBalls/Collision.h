@@ -1,21 +1,21 @@
 #pragma once
-#include "Ball.h"
+#include "Particle.h"
 
 class Collision
 {
 	int time;
-	Ball* ball1;
-	Ball* ball2;
+	Particle* particle1;
+	Particle* particle2;
 
 	public:
 
 		Collision() {};
-		Collision(int time, Ball* ball1, Ball* ball2);
+		Collision(int time, Particle* ball1, Particle* ball2);
 
 		int getTime();
 
-		Ball* getBall1();
-		Ball* getBall2();
+		Particle* getParticle1();
+		Particle* getParticle2();
 
 
 		friend bool operator < (const Collision& coll1, const Collision& coll2) {
@@ -31,7 +31,7 @@ class Collision
 		}
 
 		friend bool operator != (const Collision& coll1, const Collision& coll2) {
-			return ((coll1.ball1 != coll2.ball1) && (coll1.ball2 != coll2.ball2));
+			return ((coll1.particle1 != coll2.particle1) && (coll1.particle2 != coll2.particle2));
 		}
 
 

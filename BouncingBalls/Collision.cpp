@@ -1,13 +1,11 @@
 #include "Collision.h"
-#include "Ball.h"
+#include "Particle.h"
 
 
-Collision::Collision(int time, Ball* ball1, Ball* ball2) : time(time), ball1(ball1), ball2(ball2) {}
-
-
+Collision::Collision(int time, Particle* particle1, Particle* particle2) : time(time), particle1(particle1), particle2(particle2) {}
 
 int Collision::getTime() { return time; }
 
-Ball* Collision::getBall1() { return ball1; }
-Ball* Collision::getBall2() { return ball2; }
+Particle* Collision::getParticle1() { return particle1; }
+Particle* Collision::getParticle2() { return particle2; }
 

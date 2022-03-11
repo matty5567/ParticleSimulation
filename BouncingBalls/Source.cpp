@@ -4,64 +4,70 @@
 #include <iostream>
 #include <Windows.h>
 #include <cMath>
-#include "ball.h"
+#include "Particle.h"
 #include "CollisionHeap.h"
 #include <vector>
 
-int WINDOW_SIZE = 1500;
+int WINDOW_SIZE = 800;
+const int NUM_PARTICLES = 100;
 
-CollisionHeap initialiseCollisionHeap(std::vector<Ball*> balls) {
+void insertNextWallCollisionsToHeap(Particle* particle, CollisionHeap* collisionHeap, int time) {
+    collisionHeap->insert(Collision(particle->timeToHitVerticalWall(WINDOW_SIZE, time), NULL, particle), time);
+    collisionHeap->insert(Collision(particle->timeToHitHorizontalWall(WINDOW_SIZE, time), particle, NULL), time);
+}
+
+void insertNextParticleCollisionsToHeap(Particle* particle, std::vector<Particle*> particles, CollisionHeap* collisionHeap, int time) {
+    for (Particle* j : particles) {
+
+        int ballCollisionTime = particle->timeToHit(j, time);
+
+        if (ballCollisionTime < INT_MAX && ballCollisionTime > time) {
+            Collision collision = Collision(ballCollisionTime, particle, j);
+            collisionHeap->insert(collision, time);
+        }
+    }
+}
+
+cv::Mat initialiseWindow() {
+    srand(time(NULL));
+    cv::Mat window, board;
+    window = cv::Mat::zeros(WINDOW_SIZE, WINDOW_SIZE, CV_8UC3);
+    cv::namedWindow("Display window", cv::WINDOW_AUTOSIZE);
+    window.setTo(cv::Scalar(0, 0, 0));
+    return window;
+    }
+
+
+CollisionHeap initialiseCollisionHeap(std::vector<Particle*> particles) {
     CollisionHeap collisionHeap = CollisionHeap();
 
-    for (Ball* i : balls) {
-
-        collisionHeap.insert(Collision(i->timeToHitVerticalWall(WINDOW_SIZE, 0), NULL, i), 0);
-        collisionHeap.insert(Collision(i->timeToHitHorizontalWall(WINDOW_SIZE, 0), i, NULL), 0);
-
-        for (Ball* j : balls) {
-
-            int ballCollisionTime = i->timeToHit(j, 0);
-
-            if (ballCollisionTime < INT_MAX && ballCollisionTime > 0) {
-                Collision collision = Collision(ballCollisionTime, i, j);
-
-
-                collisionHeap.insert(collision, 0);
-            }
-
-            
-        }
+    for (Particle* i : particles) {
+        insertNextWallCollisionsToHeap(i, &collisionHeap, 0);
+        insertNextParticleCollisionsToHeap(i, particles, &collisionHeap, 0);
     }
 
     return collisionHeap;
 }
 
+std::vector<Particle*> initialiseParticles() {
+    std::vector<Particle*> particles;
+    for (int i = 0; i < NUM_PARTICLES; i++) {
+        Particle* ball = new Particle(i, WINDOW_SIZE);
+        particles.push_back(ball);
+    }
+    return particles;
+}
+
 int main(int argc, char** argv)
 {
-    srand(time(NULL));
-
+    cv::Mat window = initialiseWindow();
+    cv::Mat board;
     int time = 0;
-    
-
-    const int numBalls = 500;
-
-    cv::Mat image, board;
-    image = cv::Mat::zeros(WINDOW_SIZE, WINDOW_SIZE, CV_8UC3);
-
     char ch;
 
-    std::vector<Ball*> balls;
+    std::vector<Particle*> particles = initialiseParticles();
 
-    for (int i = 0; i < numBalls; i++) {
-        Ball* ball = new Ball(i, WINDOW_SIZE);
-        balls.push_back(ball);
-    }
-
-
-    CollisionHeap collisionHeap = initialiseCollisionHeap(balls);
-
-    cv::namedWindow("Display window", cv::WINDOW_AUTOSIZE);
-
+    CollisionHeap collisionHeap = initialiseCollisionHeap(particles);
 
     Collision nextCollision = collisionHeap.pop_min();
     Collision prevCollision;
@@ -69,111 +75,65 @@ int main(int argc, char** argv)
 
     while (true) {
 
-
-        image.copyTo(board);
+        window.copyTo(board);
 
         if (time == nextCollision.getTime()) {
 
-            Ball* ball1;
-            Ball* ball2;
+            Particle* particle1;
+            Particle* particle2;
 
             while (nextCollision.getTime() == time) {
-                ball1 = nextCollision.getBall1();
-                ball2 = nextCollision.getBall2();
+                particle1 = nextCollision.getParticle1();
+                particle2 = nextCollision.getParticle2();
 
-                if (ball1 == NULL && ball2 != NULL) {
+                if (particle1 == NULL && particle2 != NULL) {
                     // collision with vertical wall
-                    if (nextCollision.getBall2()->timeToHitVerticalWall(WINDOW_SIZE, 0) <= 1) {
-                        ball2->bounceOfVerticalWall();
+                    if (nextCollision.getParticle2()->timeToHitVerticalWall(WINDOW_SIZE, 0) <= 1) {
+                        particle2->bounceOfVerticalWall();
 
-                        collisionHeap.insert(Collision(ball2->timeToHitVerticalWall(WINDOW_SIZE, time), NULL, ball2), time);
-                        collisionHeap.insert(Collision(ball2->timeToHitHorizontalWall(WINDOW_SIZE, time), ball2, NULL), time);
+                        insertNextWallCollisionsToHeap(particle2, &collisionHeap, time);
+                        insertNextParticleCollisionsToHeap(particle2, particles, &collisionHeap, time);
 
-                        for (Ball* i : balls) {
-
-                            int collisionTimeBall2 = ball2->timeToHit(i, time);
-
-                            Collision collision2 = Collision(collisionTimeBall2, ball2, i);
-
-                            collisionHeap.insert(collision2, time);
-
-                        }
                     }
-                    else { collisionHeap.insert(Collision(ball2->timeToHitVerticalWall(WINDOW_SIZE, time), NULL, ball2), time); }
+                    else { collisionHeap.insert(Collision(particle2->timeToHitVerticalWall(WINDOW_SIZE, time), NULL, particle2), time); }
                 }
 
-                else if (ball2 == NULL and ball1 != NULL) {
+                else if (particle2 == NULL and particle1 != NULL) {
                     // collision with horizontal wall
-                    if (nextCollision.getBall1()->timeToHitHorizontalWall(WINDOW_SIZE, 0) <= 1) {
-                        ball1->bounceOfHorizontalWall();
+                    if (nextCollision.getParticle1()->timeToHitHorizontalWall(WINDOW_SIZE, 0) <= 1) {
+                        particle1->bounceOfHorizontalWall();
 
-                        collisionHeap.insert(Collision(ball1->timeToHitVerticalWall(WINDOW_SIZE, time), NULL, ball1), time);
-                        collisionHeap.insert(Collision(ball1->timeToHitHorizontalWall(WINDOW_SIZE, time), ball1, NULL), time);
-                        
-
-                        for (Ball* i : balls) {
-
-                            int collisionTimeBall1 = ball1->timeToHit(i, time);
-
-                            Collision collision1 = Collision(collisionTimeBall1, ball1, i);
-
-                            collisionHeap.insert(collision1, time);
-
-                        }
+                        insertNextWallCollisionsToHeap(particle1, &collisionHeap, time);
+                        insertNextParticleCollisionsToHeap(particle1, particles, &collisionHeap, time);
                     }
 
-                    else { collisionHeap.insert(Collision(ball1->timeToHitHorizontalWall(WINDOW_SIZE, time), ball1, NULL), time); }
+                    else { collisionHeap.insert(Collision(particle1->timeToHitHorizontalWall(WINDOW_SIZE, time), particle1, NULL), time); }
                 }
 
                 else {
 
-                    // Two balls colliding
-                     if ((nextCollision.getBall1()->timeToHit(nextCollision.getBall2(), 0) <= 1)) {
+                    // Two Particles colliding
+                    // Two Particles colliding
+                     if ((nextCollision.getParticle1()->timeToHit(nextCollision.getParticle2(), 0) <= 1)) {
 
+                         particle1->bounceOff(particle2);
 
+                        insertNextWallCollisionsToHeap(particle1, &collisionHeap, time);
+                        insertNextWallCollisionsToHeap(particle2, &collisionHeap, time);
 
-                        ball1->bounceOff(ball2);
-
-                        collisionHeap.insert(Collision(ball2->timeToHitVerticalWall(WINDOW_SIZE, time), NULL, ball2), time);
-                        collisionHeap.insert(Collision(ball2->timeToHitHorizontalWall(WINDOW_SIZE, time), ball2, NULL), time);
-
-
-                        collisionHeap.insert(Collision(ball1->timeToHitVerticalWall(WINDOW_SIZE, time), NULL, ball1), time);
-                        collisionHeap.insert(Collision(ball1->timeToHitHorizontalWall(WINDOW_SIZE, time), ball1, NULL), time);
-
-                        for (Ball* i : balls) {
-
-                            if ((i != ball1) && (i != ball2)) {
-
-                                int collisionTimeBall1 = ball1->timeToHit(i, time);
-                                int collisionTimeBall2 = ball2->timeToHit(i, time);
-
-                                Collision collision1 = Collision(collisionTimeBall1, ball1, i);
-                                Collision collision2 = Collision(collisionTimeBall2, ball2, i);
-
-                                collisionHeap.insert(collision1, time);
-                                collisionHeap.insert(collision2, time);
-
-                            }
-                        }
+                        insertNextParticleCollisionsToHeap(particle1, particles, &collisionHeap, time);
+                        insertNextParticleCollisionsToHeap(particle2, particles, &collisionHeap, time);
                     }
                 }
-
 
                 
                 prevCollision = nextCollision;
                 nextCollision = collisionHeap.pop_min();
 
-                
             }
-
-
- 
-
-            
         }
 
-        for (auto& x : balls) {
+        for (auto& x : particles) {
 
             x->update(WINDOW_SIZE);
             x->draw(board);
@@ -181,13 +141,8 @@ int main(int argc, char** argv)
 
         imshow("Display window", board);
 
-
-        Sleep(1);
-
         ch = cv::pollKey();
-
         if (ch != -1) { break; }
-
         time += 1;
 
     }

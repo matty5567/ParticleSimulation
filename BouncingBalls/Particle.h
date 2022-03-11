@@ -3,7 +3,7 @@
 #include <opencv2/imgproc.hpp>
 #pragma once
 
-class Ball {
+class Particle {
 
 	private:
 		double x, y;
@@ -11,20 +11,21 @@ class Ball {
 		int radius;
 		int mass;
 		int id;
+		cv::Scalar colour;
 
 	public:
 
-		Ball(int id, int window_size);
+		Particle(int id, int window_size);
 
 		void update(int WINDOW_SIZE);
 
-		int timeToHit(Ball* that, int currTime);
+		int timeToHit(Particle* that, int currTime);
 
 		int timeToHitVerticalWall(int windowSize, int currTime);
 
 		int timeToHitHorizontalWall(int windowSize, int currTime);
 
-		void bounceOff(Ball* that);
+		void bounceOff(Particle* that);
 #
 
 		void bounceOfVerticalWall();
