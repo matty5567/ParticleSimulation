@@ -56,7 +56,6 @@ Collision CollisionHeap::show_min() {
 
 void CollisionHeap::insert(Collision x, int currTime) {
 	if (x.getTime() == INT_MAX || x.getTime() <= currTime) { return; }
-	if (heap.size() == 0) { heap.push_back(x); }
 	heap.push_back(x);
 	swim(heap.size() - 1);
 };
